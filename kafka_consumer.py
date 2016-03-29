@@ -16,6 +16,6 @@ for msg in consumer:
 	db.message.insert_one(
 				{ 
 				  "date": '{:%m/%d/%Y %H/%M/%S"}'.format(datetime.now()),
-           		  "message": msg.value
-           		}
-     )
+				  "message": msg.value
+				}
+	 )
