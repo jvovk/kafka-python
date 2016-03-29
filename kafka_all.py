@@ -73,6 +73,12 @@ def main():
 	if client is not None:
 		client.close()
 
+	if producer is not None:
+		producer.stop()
+
+	if consumer is not None:
+		consumer.stop()
+
 if __name__ == "__main__":
 	logging.basicConfig(
 		format='%(asctime)s.%(msecs)s:%(name)s:%(thread)d:%(levelname)s:%(process)d:%(message)s',
