@@ -8,21 +8,32 @@ from kafka.producer import SimpleProducer
 from pymongo import MongoClient
 from datetime import datetime
 
-
 servers = sys.argv[1]
 topic = sys.argv[2]
 mongohost = sys.argv[3]
+
+client = KafkaClient(servers)
+producer = SimpleProducer(client, async=True)
+consumer = SimpleConsumer(client, "test-group", topic)
 
 class Producer(threading.Thread):
 	daemon = True
 
 	def run(self):
-		client = KafkaClient(servers)
-		producer = SimpleProducer(client)
-
-		while True:
+		i = 10
+		while i > 0:
 			producer.send_messages(topic, "Hello!")
 			time.sleep(1)
+			i -= 1
+		self.stop()
+
+
+	def __init__(self):
+		super(Producer, self).__init__()
+		self._stop = threading.Event()
+
+	def stop(self):
+		self._stop.set()
 
 
 class Consumer(threading.Thread):
@@ -31,8 +42,6 @@ class Consumer(threading.Thread):
 	def run(self):
 		client = MongoClient([mongohost])
 		db = client.messages
-		client = KafkaClient(servers)
-		consumer = SimpleConsumer(client, "test-group", topic)
 
 		for msg in consumer:
 			print msg
@@ -42,17 +51,28 @@ class Consumer(threading.Thread):
 					"message": msg.message.value
 				}
 			)
+	
+
+	def __init__(self):
+		super(Consumer, self).__init__()
+		self._stop = threading.Event()
+
+	def stop(self):
+		self._stop.set()
+
 
 def main():
-	threads = [
-		Producer(),
-		Consumer()
-	]
+	p = Producer()
+	c = Consumer()
 
-	for t in threads:
-		t.start()
+	p.start()
+	c.start()
 
-	time.sleep(10)
+	p.join()
+	c.stop()
+	
+	if clinet is not None:
+		clint.close()
 
 if __name__ == "__main__":
 	logging.basicConfig(
@@ -60,5 +80,4 @@ if __name__ == "__main__":
 		level=logging.DEBUG
 	)
 	main()
-
 
