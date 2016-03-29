@@ -11,7 +11,7 @@ python /Users/YV/Documents/python/kafka-python/kafka_all.py localhost:9092 test 
 strcount=$(mongo --host="localhost:27017" messages -eval 'db.message.count({})')
 strcount=$(echo $strcount | awk '{print $8}')
 
-if [[ $strcount -ge 10 ]]; then 
+if [[ $strcount -eq 10 ]]; then 
 	code=0
 	echo All messages were saved. SUCCESS.
 else 

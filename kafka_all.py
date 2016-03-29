@@ -40,11 +40,10 @@ class Consumer(threading.Thread):
 	daemon = True
 
 	def run(self):
-		client = MongoClient([mongohost])
-		db = client.messages
+		cl = MongoClient([mongohost])
+		db = cl.messages
 
 		for msg in consumer:
-			print msg
 			db.message.insert_one(
 				{ 
 					"date": '{:%m/%d/%Y %H/%M/%S"}'.format(datetime.now()),
@@ -70,9 +69,9 @@ def main():
 
 	p.join()
 	c.stop()
-	
-	if clinet is not None:
-		clint.close()
+
+	if client is not None:
+		client.close()
 
 if __name__ == "__main__":
 	logging.basicConfig(
