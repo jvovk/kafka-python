@@ -11,8 +11,9 @@ mongohost = sys.argv[3]
 
 client = MongoClient([mongohost])
 db = client.messages
-consumer = KafkaConsumer(topic, servers)
+consumer = KafkaConsumer(topic, bootstrap_servers=servers)
 for msg in consumer:
+	print msg
 	db.message.insert_one(
 				{ 
 				  "date": '{:%m/%d/%Y %H/%M/%S"}'.format(datetime.now()),

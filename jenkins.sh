@@ -1,36 +1,36 @@
 #!/bin/bash
 
 cd /Users/YV/Downloads/kafka_2.10-0.9.0.0
-sudo bin/zookeeper-server-start.sh -daemon config/zookeeper.properties 
+sudo bin/zookeeper-server-start.sh config/zookeeper.properties > /Users/YV/Documents/log-file.log 2>&1 &
 PID1=$!
-sudo bin/kafka-server-start.sh -daemon config/server.properties 
+sudo bin/kafka-server-start.sh config/server.properties > /Users/YV/Documents/log-file-2.log 2>&1 &
 PID2=$!
-sudo mongod --fork --syslog
-PID3=$!
+sudo mongod --fork --syslog > /dev/null 2>&1  
+sleep 7
 
-if [ -n "PID2" ]; then 
-	python /Users/YV/Documents/python/kafka-python/kafka_all.py localhost:9092 test localhost:27017
+python /Users/YV/Documents/python/kafka-python/kafka_all.py localhost:9092 test localhost:27017 > /Users/YV/Documents/log-file-4.log 2>&1 
 
 strcount=$(mongo --host="localhost:27017" messages -eval 'db.message.count({})')
 strcount=$(echo $strcount | awk '{print $8}')
-echo $strcount
-if [ $strcount -ge 10 ]; then 
-	exit_code=0
+
+if [[ $strcount -ge 10 ]]; then 
+	code=0
 	echo All messages were saved. SUCCESS.
 else 
-	exit_code=1
+	code=1
 	echo Not all messages were saved. ERROR.
 fi
 
-mongo --host="localhost:27017" messages -eval 'db.message.remove({})' &> /dev/null
+mongo --host="localhost:27017" messages -eval 'db.message.remove({})' > /dev/null 2>&1  
 
-pr=$(ps -e | awk '/kafka/{print $1}')
-sudo kill -KILL $pr &> /dev/null
+sudo kill $PID2 > /dev/null 2>&1  
+sudo kill $PID1 > /dev/null 2>&1  
+pid=$(ps -e | awk '/server.properties/{print $1}')
+sudo kill $pid > /dev/null 2>&1 
+pid=$(ps -e | awk '/zookeeper.properties/{print $1}')
+sudo kill $pid > /dev/null 2>&1 
 
-pr=$(ps -e | awk '/mongod/{print $1}')
-sudo kill -KILL $pr &> /dev/null
+pid=$(ps -e | awk '/mongod --fork/{print $1}')
+sudo kill $pid > /dev/null 2>&1
 
-exit $exit_code
-else
-	exit 1
-fi
+exit $code
