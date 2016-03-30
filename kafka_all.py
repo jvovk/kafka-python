@@ -91,10 +91,6 @@ def main():
 
 	dbmescount = db.message.count()
 
-	print rescount
-	print dbmescount
-	print mesnum
-
 	if rescount == mesnum == dbmescount:
 		code = 0
 	elif rescount == 0:
