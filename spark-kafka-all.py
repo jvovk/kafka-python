@@ -1,9 +1,9 @@
 import threading, logging, time, sys
-import pyspark_cassandra
 from kafka.client import KafkaClient
 from kafka.consumer import SimpleConsumer
 from kafka.producer import SimpleProducer
 from datetime import datetime
+from pyspark.sql import SQLContext
 from pyspark import SparkConf, SparkContext
 
 servers = sys.argv[1]
@@ -15,6 +15,7 @@ list = []
 
 conf = SparkConf().setAppName("KafkaSpark").setMaster("local[*]").set("spark.cassandra.connection.host", casshost)
 sc   = SparkContext(conf=conf)
+sqlContext = SQLContext(sparkContext=sc)
 
 client = KafkaClient(servers)
 producer = SimpleProducer(client)
@@ -43,7 +44,6 @@ class Producer(threading.Thread):
 	def stop(self):
 		self._stop.set()
 
-
 class Consumer(threading.Thread):
 	daemon = True
 
@@ -59,7 +59,6 @@ class Consumer(threading.Thread):
 	def stop(self):
 		self._stop.set()
 
-
 def close():
 	if client != None:
 		client.close()
@@ -72,7 +71,6 @@ def close():
 
 	if sc != None:	
 		sc.stop()
-
 
 def main():
 	p = Producer()
@@ -90,10 +88,20 @@ def main():
 		"data": x[0],
 		"time": time
 		})
-	row.saveToCassandra("mykeyspace", "test1")
+
+	row.toDF().write.format("org.apache.spark.sql.cassandra").options(table="test1", keyspace = "mykeyspace").save(mode ="overwrite")
+	dbmescount = sqlContext.read.format("org.apache.spark.sql.cassandra").options(table="test1", keyspace="mykeyspace").load().count()
+
+	if rescount == mesnum == dbmescount:
+		print "%s messages were delievered and saved. SUCCESS" % mesnum
+	elif rescount == 0:
+		print "0 messages were delievered. FAIL"
+	elif rescount < mesnum and rescount == dbmescount:
+		print "Less than %s messages, but all of them were saved. " % mesnum
+	else:
+		print "Count of messages delievered are not equal count of saved. "
 
 	close()
-
 
 if __name__ == "__main__":
 	main()
