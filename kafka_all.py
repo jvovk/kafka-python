@@ -11,18 +11,26 @@ from datetime import datetime
 servers = sys.argv[1]
 topic = sys.argv[2]
 mongohost = sys.argv[3]
+mesnum = int(sys.argv[4])
+i = mesnum
 
 client = KafkaClient(servers)
-producer = SimpleProducer(client, async=True)
+producer = SimpleProducer(client)
 consumer = SimpleConsumer(client, "test-group", topic)
+cl = MongoClient([mongohost])
+db = cl.messages
+rescount = 0
 
 class Producer(threading.Thread):
 	daemon = True
 
 	def run(self):
-		i = 10
+		global i
+		global rescount
 		while i > 0:
-			producer.send_messages(topic, "Hello!")
+			response = producer.send_messages(topic, "Hello!")
+			if response != None:
+				rescount += 1;
 			time.sleep(1)
 			i -= 1
 		self.stop()
@@ -40,9 +48,6 @@ class Consumer(threading.Thread):
 	daemon = True
 
 	def run(self):
-		cl = MongoClient([mongohost])
-		db = cl.messages
-
 		for msg in consumer:
 			db.message.insert_one(
 				{ 
@@ -60,6 +65,20 @@ class Consumer(threading.Thread):
 		self._stop.set()
 
 
+def close():
+	if client != None:
+		client.close()
+
+	if producer != None:
+		producer.stop()
+
+	if consumer != None:
+		consumer.stop()
+
+	if cl != None:	
+		cl.close()
+
+
 def main():
 	p = Producer()
 	c = Consumer()
@@ -70,14 +89,27 @@ def main():
 	p.join()
 	c.stop()
 
-	if client is not None:
-		client.close()
+	dbmescount = db.message.count()
 
-	if producer is not None:
-		producer.stop()
+	print rescount
+	print dbmescount
+	print mesnum
 
-	if consumer is not None:
-		consumer.stop()
+	if rescount == mesnum == dbmescount:
+		code = 0
+	elif rescount == 0:
+		code = 1
+	elif rescount < mesnum and rescount == dbmescount:
+		code = 2
+	else:
+		code = 3
+
+	db.message.delete_many({})
+
+	close()
+
+	sys.exit(code)
+
 
 if __name__ == "__main__":
 	logging.basicConfig(

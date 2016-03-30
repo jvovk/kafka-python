@@ -6,20 +6,21 @@ sudo bin/kafka-server-start.sh config/server.properties > /Users/YV/Documents/lo
 sudo mongod --fork --syslog > /dev/null 2>&1  
 sleep 5
 
-python /Users/YV/Documents/python/kafka-python/kafka_all.py localhost:9092 test localhost:27017 > /Users/YV/Documents/log-file-4.log 2>&1 
+mesnum=10
 
-strcount=$(mongo --host="localhost:27017" messages -eval 'db.message.count({})')
-strcount=$(echo $strcount | awk '{print $8}')
-echo $strcount
-if [[ $strcount -eq 10 ]]; then 
-	code=0
-	echo All messages were saved. SUCCESS.
+python /Users/YV/Documents/python/kafka-python/kafka_all.py localhost:9092 test localhost:27017 $mesnum > /Users/YV/Documents/log-file-4.log 2>&1 
+
+code=$?
+
+if [[ $code -eq 0 ]]; then
+	echo "$mesnum messages were delievered and saved. SUCCESS"
+elif [[ $code -eq 1 ]]; then 
+	echo "0 messages were delievered. FAIL"
+elif [[ $code -eq 2 ]]; then
+	echo "Less than $mesnum messages, but all of them were saved. "
 else 
-	code=1
-	echo Not all messages were saved. ERROR.
-fi
-
-mongo --host="localhost:27017" messages -eval 'db.message.remove({})' > /dev/null 2>&1  
+	echo "Count of messages delievered are not equal count of saved. "
+fi 
 
 sudo bin/kafka-server-stop.sh
 sleep 10
