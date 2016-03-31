@@ -1,15 +1,27 @@
-#!/usr/bin/python
+import threading, sys, json, time
+from kafka.client import KafkaClient
+from kafka.producer import SimpleProducer
+from datetime import datetime
 
-import sys
-from kafka import KafkaProducer
-import threading
+if __name__ == "__main__":
+	servers = sys.argv[1]
+	topic = sys.argv[2]
+	mesnum = int(sys.argv[3])
+	interval = float(sys.argv[4])
 
-servers = sys.argv[1]
-topic = sys.argv[2]
+	client = KafkaClient(servers)
+	producer = SimpleProducer(client)
 
-def printit():
-  threading.Timer(1.0, printit).start()
-  producer.send(topic, 'Hello, world!') 
-
-producer = KafkaProducer(bootstrap_servers=servers)
-printit()
+	try:
+		while mesnum > 0:
+			ts = time.time()
+			t = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S');
+			msg = json.dumps({'time': t, 'data' : 'Hello - %s' % mesnum})
+			producer.send_messages(topic, msg)
+			time.sleep(interval)
+			mesnum -= 1
+	except KeyboardInterrupt:
+		print "Interrupted!"
+	finally:
+		producer.stop()
+		client.close()
