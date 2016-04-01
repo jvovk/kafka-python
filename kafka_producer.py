@@ -12,11 +12,11 @@ if __name__ == "__main__":
 	client = KafkaClient(servers)
 	producer = SimpleProducer(client)
 
+	current_time = lambda: int(round(time.time() * 1000))
+
 	try:
 		while mesnum > 0:
-			ts = time.time()
-			t = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S');
-			msg = json.dumps({'time': t, 'data' : 'Hello - %s' % mesnum})
+			msg = json.dumps({'time': current_time(), 'data' : 'Hello - %s' % mesnum})
 			producer.send_messages(topic, msg)
 			time.sleep(interval)
 			mesnum -= 1

@@ -18,13 +18,14 @@ if __name__ == '__main__':
 	topic = sys.argv[2]
 	casshost = sys.argv[3]
 	interval = int(sys.argv[4])
+	zookeeper = sys.argv[5]
 
 	conf = SparkConf().setAppName("KafkaSpark").set("spark.cassandra.connection.host", casshost)
 	sc   = SparkContext(conf=conf)
 	sqlContext = SQLContext(sparkContext=sc)
 	ssc = StreamingContext(sc, batchDuration=interval)
 
-	messages = KafkaUtils.createStream(ssc, "localhost:2181", "spark-streaming-consumer", {topic: 1})
+	messages = KafkaUtils.createStream(ssc, zookeeper, "spark-streaming-consumer", {topic: 1})
 	lines = messages.map(lambda x: x[1])
 
 	rows = lines.map(lambda x: { 
